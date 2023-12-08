@@ -2,9 +2,9 @@ name: getAllRepliesToKnownPosts
 concurrency: get_context
 
 on:
-     workflow_dispatch:
-     schedule:
-          - cron: '3,13,23,33,43,53 * * * *'
+  workflow_dispatch:
+  schedule:
+     - cron: '1,31 * * * *'
      
 jobs:
   run:
