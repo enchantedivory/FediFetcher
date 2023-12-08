@@ -4,7 +4,7 @@ concurrency: get_context
 on:
   workflow_dispatch:
   schedule:
-     - cron: '1,31 * * * *'
+     - cron: '1,16,31,46 * * * *'
      
 jobs:
   run:
