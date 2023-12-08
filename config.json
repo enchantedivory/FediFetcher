@@ -1,9 +1,6 @@
 {
   "server": "mastodon.world",
-  "home-timeline-length": 200,
-  "max-followings": 80,
-  "from-notifications": 1,
-  "max-bookmarks": 80,
-  "max-favourites": 40,
-  "max-follow-requests": 80
+  "max-followings": 200,
+  "backfill-with-context": 0,
+  "backfill-mentioned-users": 0
 }
