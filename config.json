@@ -1,5 +1,4 @@
 {
-  "access-token": "ACCESS_TOKEN",
   "server": "mastodon.world",
   "home-timeline-length": 200,
   "max-followings": 5,
