@@ -1,6 +1,6 @@
 {
   "server": "mastodon.world",
-  "max-followers": 1600,
+  "max-followings": 80,
   "backfill-with-context": 0,
   "backfill-mentioned-users": 0
 }
