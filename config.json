@@ -1,5 +1,5 @@
 {
-  "server": "mastodon.world",
+  "server": "mastodon.social",
   "home-timeline-length": 200,
   "max-followings": 80,
   "max-followers": 80,
