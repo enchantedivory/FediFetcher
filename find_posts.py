@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 logger = logging.getLogger("FediFetcher")
 robotParser = urllib.robotparser.RobotFileParser()
 
-VERSION = "7.1.1"
+VERSION = "7.1.2"
 
 argparser=argparse.ArgumentParser()
 
@@ -112,7 +112,20 @@ def add_post_with_context(post, server, access_token, seen_urls, seen_hosts):
     
     return False
 
+def user_has_opted_out(user):
+    if 'note' in user and isinstance(user['note'], str) and (' nobot' in user['note'].lower() or '/tags/nobot' in user['note'].lower()):
+        return True
+    if 'indexable' in user and not user['indexable']:
+        return True
+    if 'discoverable' in user and not user['discoverable']:
+        return True
+    return False
+        
+
 def get_user_posts(user, known_followings, server, seen_hosts):
+    if user_has_opted_out(user):
+        logger.debug(f"User {user} has opted out of backfilling")
+        return None
     parsed_url = parse_user_url(user['url'])
 
     if parsed_url == None:
@@ -738,22 +751,13 @@ def get_redirect_url(url):
 
 def get_all_context_urls(server, replied_toot_ids, seen_hosts):
     """get the URLs of the context toots of the given toots"""
-    known_context_urls = set()
-    for (url, (server, toot_id)) in replied_toot_ids:
-        if(toot_context_should_be_fetched(toot)):
-            recently_checked_context[toot['uri']]['lastSeen'] = datetime.now(datetime.now().astimezone().tzinfo)
-            context = get_toot_context(server, toot_id, url, seen_hosts)
-            if context is not None:
-                for item in context:
-                    known_context_urls.add(item)
-            else:
-                logger.error(f"Error getting context for toot {url}")
-
-    known_context_urls = set(filter(lambda url: not url.startswith(f"https://{server}/"), known_context_urls))
-    
-    logger.info(f"Found {len(known_context_urls)} known context toots")
-    
-    return known_context_urls
+    return filter(
+        lambda url: not url.startswith(f"https://{server}/"),
+        itertools.chain.from_iterable(
+            get_toot_context(server, toot_id, url, seen_hosts)
+            for (url, (server, toot_id)) in replied_toot_ids
+        ),
+    )
 
 
 def get_toot_context(server, toot_id, toot_url, seen_hosts):
@@ -1015,19 +1019,31 @@ def can_fetch(user_agent, url):
         else:
             robotsTxt = ROBOTS_TXT[robots]
     else:
-        try:
-            # We are getting the robots.txt manually from here, because otherwise we can't change the User Agent
-            robotsTxt = get(robots, timeout = 2, ignore_robots_txt=True)
-            if robotsTxt.status_code in (401, 403):
-                ROBOTS_TXT[robots] = False
-                return False
-            elif robotsTxt.status_code != 200:
-                ROBOTS_TXT[robots] = True
-                return True
-            robotsTxt = robotsTxt.text
+        robotsCachePath = os.path.join(arguments.state_dir, f'robots-{parsed_uri.netloc}')
+        if os.path.exists(robotsCachePath):
+            with open(robotsCachePath, "r", encoding="utf-8") as f:
+                logger.debug(f"Getting robots.txt file from cache {parsed_uri.netloc}")
+                robotsTxt = f.read()
             ROBOTS_TXT[robots] = robotsTxt
-        except Exception as ex:
-            return True
+
+        else:
+            try:
+                # We are getting the robots.txt manually from here, because otherwise we can't change the User Agent
+                robotsTxt = get(robots, timeout = 2, ignore_robots_txt=True)
+                if robotsTxt.status_code in (401, 403):
+                    ROBOTS_TXT[robots] = False
+                    return False
+                elif robotsTxt.status_code != 200:
+                    ROBOTS_TXT[robots] = True
+                    return True
+                robotsTxt = robotsTxt.text
+                ROBOTS_TXT[robots] = robotsTxt
+                
+                with open(robotsCachePath, "w", encoding="utf-8") as f:
+                    f.write(robotsTxt)
+
+            except Exception as ex:
+                return True
     
     robotParser = urllib.robotparser.RobotFileParser()
     robotParser.parse(robotsTxt.splitlines())
@@ -1466,6 +1482,15 @@ if __name__ == "__main__":
                         seen_hosts.pop(host)
         else:
             seen_hosts = ServerList({})
+
+        # Delete any old robots.txt files so we can re-download them
+        for file_name in os.listdir(arguments.state_dir):
+            file_path = os.path.join(arguments.state_dir,file_name)
+            if file_name.startswith('robots-') and os.path.isfile(file_path):
+                if os.path.getmtime(file_path) < time.time() - 60 * 60 * 24:
+                    logger.debug(f"Removing cached robots.txt file {file_name}")
+                    os.remove(file_path)
+            
 
         if(isinstance(arguments.access_token, str)):
             setattr(arguments, 'access_token', [arguments.access_token])
