@@ -6,5 +6,6 @@
   "max-bookmarks": 80,
   "max-favourites": 80,
   "max-follow-requests": 80,
-  "from-notifications": 1
+  "from-notifications": 1,
+  "from-lists": 1
 }
