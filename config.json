@@ -1,10 +1,11 @@
 {
   "server": "mastodon.world",
+  "instance-blocklist": "minds.com", "loforo.com",
   "home-timeline-length": 200,
   "max-followings": 80,
   "max-followers": 80,
   "max-bookmarks": 80,
-  "max-favourites": 80,
+  "max-favourites": 40,
   "max-follow-requests": 80,
   "from-notifications": 1
 }
