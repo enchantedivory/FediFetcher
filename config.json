@@ -1,6 +1,6 @@
 {
   "server": "mastodon.world",
-  "instance-blocklist": "minds.com"
+  "instance-blocklist": "minds.com,loforo.com"
   "home-timeline-length": 200,
   "max-followings": 80,
   "max-followers": 80,
